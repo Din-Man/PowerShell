@@ -32,7 +32,7 @@ function New-SelfSignedCertFile-Usage {
     Write-Host "    $env:USERPROFILE\SelfSignedCerts"
     Write-Host ""
     Write-Host "USAGE EXAMPLE:" -ForegroundColor Yellow
-    Write-Host "  .\New-SelfSignedCertFile.ps1 -certSubject '/CN=www.example.com' ``"
+    Write-Host "  .\New-SelfSignedCertFile -certSubject '/CN=www.example.com' ``"
     Write-Host "    -keyFile 'key-file.key' -certFile 'crt-file.crt' -daysValid 365 ``"
     Write-Host "    -AlternativeNames 'www.example.com','example.com'"
     Write-Host ""
