@@ -43,8 +43,9 @@ VS Code workspace settings for this folder.
 
 Open this folder in VS Code or a PowerShell terminal. Run scripts as needed, following the usage instructions in each script or above.
 
-### Add This Folder to Your PATH
-To run these scripts from any directory, add this folder to your PATH environment variable.
+#### Add This Folder to Your PATH
+The scipts have been setup to run without the .ps1 extension. Navigate to the this folder on PowerShell to execute the primary function name.
+Alternatively, you can add this directory to the "Environment variables for your account" and then execture the primary function from any path.
 
 ---
 Feel free to modify or extend these scripts for your own needs!
