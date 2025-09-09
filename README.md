@@ -4,23 +4,22 @@ This folder contains a collection of useful PowerShell scripts for system admini
 
 ## Scripts
 
-### New-SelfSignedCertFile.ps1
-Generates a self-signed SSL certificate and private key using OpenSSL. 
-- Requires OpenSSL to be installed and available in the system PATH.
-- Accepts certificate subject, key file name, certificate file name, and validity period as parameters.
-- Outputs `.key` and `.crt` files in the user's `SelfSignedCerts` directory.
-- Usage example:
+### Compare-Folders.ps1
+Compares the contents of two folders (including subfolders) and logs differences in file and folder counts, as well as missing items.
+- Parameters: `-folder1`, `-folder2`, (output log files)
+- Usage: Useful for folder synchronization, backup verification, or migration checks.
+- Example usage:
   ```powershell
-  New-SelfSignedCertFile -certSubject '/CN=www.example.com' -keyFile 'key-file.key' -certFile 'crt-file.crt' -daysValid 365
+  Compare-Folders -folder1 'C:\Path\To\FolderA' -folder2 'C:\Path\To\FolderB'
   ```
-
-### Get-NicSummary.ps1
-Summarizes network interface information on the system.
-- Useful for quickly viewing NIC status, IP addresses, and other details.
 
 ### create-w11-hv.ps1
 Automates the creation of a Windows 11 Hyper-V virtual machine.
 - Prompts for configuration details and provisions a VM accordingly.
+
+### Get-NicSummary.ps1
+Summarizes network interface information on the system.
+- Useful for quickly viewing NIC status, IP addresses, and other details.
 
 ### Get-RandomPassPhrase.ps1
 Generates a secure, memorable passphrase using random words, digits, and special characters.
@@ -31,6 +30,21 @@ Generates a secure, memorable passphrase using random words, digits, and special
   ```powershell
   Get-RandomPassPhrase -WordCount 5 -DigitCount 3 -SpecialCount 2 -Capitalize
   ```
+
+### New-SelfSignedCertFile.ps1
+Generates a self-signed SSL certificate and private key using OpenSSL. 
+- Requires OpenSSL to be installed and available in the system PATH.
+- Accepts certificate subject, key file name, certificate file name, and validity period as parameters.
+- Outputs `.key` and `.crt` files in the user's `SelfSignedCerts` directory.
+- Usage example:
+  ```powershell
+  New-SelfSignedCertFile -certSubject '/CN=www.example.com' -keyFile 'key-file.key' -certFile 'crt-file.crt' -daysValid 365
+  ```
+
+### Stop-Lock.ps1
+Prevents the system from locking or going idle by simulating key presses for a specified duration.
+- Parameters: `-duration` (minutes, default 60), `-sink` (output log), `-Help`, `-Usage`
+- Usage: Useful for keeping sessions active during long-running tasks or presentations.
 
 ### PowerShell.code-workspace
 VS Code workspace settings for this folder.
@@ -43,9 +57,8 @@ VS Code workspace settings for this folder.
 
 Open this folder in VS Code or a PowerShell terminal. Run scripts as needed, following the usage instructions in each script or above.
 
-#### Add This Folder to Your PATH
-The scipts have been setup to run without the .ps1 extension. Navigate to the this folder on PowerShell to execute the primary function name.
-Alternatively, you can add this directory to the "Environment variables for your account" and then execture the primary function from any path.
+### Add This Folder to Your PATH
+To run these scripts from any directory, add this folder to your PATH environment variable.
 
 ---
 Feel free to modify or extend these scripts for your own needs!
