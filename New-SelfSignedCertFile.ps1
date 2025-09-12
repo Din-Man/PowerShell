@@ -1,13 +1,13 @@
 
 param (
-    $sink,
-    $certSubject,
-    $AlternativeNames,
-    $keyFile,
-    $certFile,
+    [string]$sink,
+    [string]$certSubject,
+    [string]$AlternativeNames,
+    [string]$keyFile,
+    [string]$certFile,
     [switch]$Usage,
     [switch]$Help,
-    $daysValid = 365
+    [int]$daysValid = 365
 )
 
 function New-SelfSignedCertFile-Usage {
