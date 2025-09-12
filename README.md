@@ -31,6 +31,16 @@ Generates a secure, memorable passphrase using random words, digits, and special
   Get-RandomPassPhrase -WordCount 5 -DigitCount 3 -SpecialCount 2 -Capitalize
   ```
 
+### Grant-CertPrivateKeyReadAccess.ps1
+- Grants read access to the private key of a specified certificate from specified store to requested user or group.
+- Accepts certificate friendly name, identity, key store and switch to indicate Azure AD or local / domain identity.
+- Example usage:
+  ```powershell
+  Grant-CertPrivateKeyReadAccess -certFriendlyName 'MyCert' -identity 'DOMAIN\User' -storeLocation 'CurrentUser'
+  
+  Grant-CertPrivateKeyReadAccess -certFriendlyName 'MyCert' -identity 'Group' -storeLocation 'LocalMachine' -UseAzureAD
+  ```
+
 ### New-SelfSignedCertFile.ps1
 Generates a self-signed SSL certificate and private key using OpenSSL. 
 - Requires OpenSSL to be installed and available in the system PATH.
@@ -41,10 +51,27 @@ Generates a self-signed SSL certificate and private key using OpenSSL.
   New-SelfSignedCertFile -certSubject '/CN=www.example.com' -keyFile 'key-file.key' -certFile 'crt-file.crt' -daysValid 365
   ```
 
+### Resolve-DNSNamesBulk.ps1
+Resolves multiple DNS names to their corresponding records (A, AAAA, CNAME, SOA).
+- Accepts input as a file path or a comma/space-separated list of DNS names.
+- Outputs formatted tables of resolved DNS records and failed DNS records.
+- Usage example:
+  ```powershell
+  Resolve-DNSNames-Bulk -DNSNamesInput '.\dnsnames.txt'
+  
+  Resolve-DNSNames-Bulk -DNSNamesInput 'example.com, example.org, sub.domain.com'
+  ```
+
 ### Stop-Lock.ps1
 Prevents the system from locking or going idle by simulating key presses for a specified duration.
-- Parameters: `-duration` (minutes, default 60), `-sink` (output log), `-Help`, `-Usage`
-- Usage: Useful for keeping sessions active during long-running tasks or presentations.
+- Parameters: `-duration` (minutes, default 60)
+- Usage example:
+  ```powershell
+  Stop-Lock 60
+
+  Stop-Lock -duration 100
+  ```
+
 
 ### PowerShell.code-workspace
 VS Code workspace settings for this folder.
