@@ -21,6 +21,18 @@ Automates the creation of a Windows 11 Hyper-V virtual machine.
 Summarizes network interface information on the system.
 - Useful for quickly viewing NIC status, IP addresses, and other details.
 
+### Format-Prompt.ps1
+Dynamically formats the PowerShell prompt based on the current working directory,
+using environment variable mappings to shorten paths for readability.
+- Suggested usage - call from `~\Documents\WindowsPowerShell\profile.ps1`
+- Example usage -
+  ```
+  if ($(Get-Location).Path -eq $env:UserProfile) {
+      Set-Location $env:MyWorkSpace
+  }
+  function prompt { Format-Prompt }
+  ```
+
 ### Get-RandomPassPhrase.ps1
 Generates a secure, memorable passphrase using random words, digits, and special characters.
 - Highly customizable: choose word count, digit count, special character set, and capitalization.
