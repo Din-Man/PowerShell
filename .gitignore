@@ -1,5 +1,5 @@
 # Ignore any test files
-*test*
+test.ps1
 
 # Ignore all .log files
 *.log
