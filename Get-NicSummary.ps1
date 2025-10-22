@@ -11,12 +11,13 @@ function Get-NicSummary {
 	@{n = 'Index'; e = { $_.InterfaceIndex } },
 	@{n = 'InterfaceAlias'; e = { if ($_.InterfaceAlias.Length -gt 10) { $_.InterfaceAlias.SubString(0, 10) } else { $_.InterfaceAlias } } },
 	@{n = 'MacAddress       ';	e = { $_.NetAdapter.MacAddress } },
-	@{n = 'Status      '; e = { $_.NetAdapter.Status } },
+	@{n = 'Status'; e = { if ($_.NetAdapter.Status -eq "Up") { "Up" } else { "Down" } } },
 	@{n = 'ProfileName     '; e = { $_.NetProfile.Name } },
+	# @{n = 'ProfileGUID'; e = { $_.NetProfile.InstanceID } },
 	@{n = 'NetworkType'; e = { $_.NetProfile.NetworkCategory } },
 	@{n = 'IPv4Address '; e = { if ($_.NetAdapter.Status -eq "Up" ) { $_.IPv4Address[0].IPAddress } else { "" } } },
 	@{n = 'DefaultGateway'; e = { if ($_.NetAdapter.Status -eq "Up" ) { $_.IPv4DefaultGateway[0].NextHop } else { "" } } } `
-	| Sort-Object @{e = 'Status      '; desc = $true }, Index `
+	| Sort-Object @{e = 'Status'; desc = $true }, Index `
 	| Format-Table 
 }
 Get-NicSummary
