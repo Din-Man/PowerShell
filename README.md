@@ -34,13 +34,15 @@ using environment variable mappings to shorten paths for readability.
   ```
 
 ### Get-RandomPassPhrase.ps1
-Generates a secure, memorable passphrase using random words, digits, and special characters.
-- Highly customizable: choose word count, digit count, special character set, and capitalization.
-- Uses a dictionary file for word selection (default: Dictionary.txt).
+Generates 1 or more secure, memorable passphrase using random words, digits, and special characters.
+- Choose the number of passphrases to generate, word count, choice between basic and extended special chars.
+- Uses a dictionary file for word selection (expects Dictionary.txt to be present in the script folder).
 - Outputs the passphrase, entropy score, and a strength label.
 - Example usage:
   ```powershell
-  Get-RandomPassPhrase -WordCount 5 -DigitCount 3 -SpecialCount 2 -Capitalize
+      Get-RandomPassphrase
+      Get-RandomPassphrase -WordCount 4 -Count 3
+      Get-RandomPassphrase -UseExtendedSpecials -AllLower
   ```
 
 ### Grant-CertPrivateKeyReadAccess.ps1

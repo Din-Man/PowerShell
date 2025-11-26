@@ -2,7 +2,6 @@ param (
     [string] $sink,
     [int] $Count = 1,
     [int] $WordCount = 5,
-    [double] $MinEntropy = 0,
     [switch] $UseExtendedSpecials,
     [switch] $AllLower,
     [switch] $Usage,
@@ -19,9 +18,8 @@ function Get-RandomPassphrase-Usage {
     Write-Host "#################################################################################" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "DESCRIPTION:" -ForegroundColor Yellow
-    Write-Host "  Generates a secure passphrase composed of random words, digits, and" 
-    Write-Host "  special characters. Anchors the passphrase with a word at both ends and"
-    Write-Host "  digits or special characters are randomly placed between words."
+    Write-Host "  Generates a secure passphrase composed of random words, digits, and special characters. " 
+    Write-Host "  Anchors passphrase with words at both ends and digits or special characters placed randomly between words."
     Write-Host "  Looks for 'Dictionary.txt' on the script path for the dictionary of words to be used. "
     Write-Host "  Recommended to use your own custom word list or Diceware or EFF word list or other public wordlist."
     Write-Host ""
@@ -30,7 +28,6 @@ function Get-RandomPassphrase-Usage {
     Write-Host "  -Count                Number of passphrases to generate. Default: 1"
     Write-Host "  -UseExtendedSpecials  Switch to select basic vs extended special characters"
     Write-Host "  -AllLower             Switch to indicate if the passphrase should be all lower case"
-    Write-Host "  -MinEntropy           Minimum entropy threshold in bits. Default: 0 (no minimum)"
     Write-Host ""
     Write-Host "OUTPUT:" -ForegroundColor Yellow
     Write-Host "  - Passphrase string with anchored first/last word"
@@ -44,7 +41,7 @@ function Get-RandomPassphrase-Usage {
     Write-Host ""
     Write-Host "USAGE EXAMPLES:" -ForegroundColor Yellow
     Write-Host "  Get-RandomPassphrase"
-    Write-Host "  Get-RandomPassphrase -WordCount 4 -MinEntropy 80 -Count 3"
+    Write-Host "  Get-RandomPassphrase -WordCount 4 -Count 3"
     Write-Host "  Get-RandomPassphrase -UseExtendedSpecials -AllLower"
     Write-Host ""
     Write-Host "#################################################################################" -ForegroundColor Cyan
@@ -103,13 +100,10 @@ function Get-EntropyBits {
 
     # Per-word entropy from dictionary size
     $wordEntropy = $WordCount * [Math]::Log($WordListCount, 2)
-    Write-Host $wordEntropy
     # Seperator entropy from the slots
     $slots = $WordCount - 1
     $slotsCharsCount = 10 + (Get-SpecialCharacters -UseExtendedSpecials:$UseExtendedSpecials).Count
-    Write-Host $slotsCharsCount
     $slotsEntropy = $slots * [Math]::Log($slotsCharsCount, 2)
-    Write-Host $slotsEntropy
 
     return [math]::Round($wordEntropy + $slotsEntropy, 2)
 }
@@ -136,7 +130,6 @@ function Get-RandomPassPhrase {
     
     [int] $MaxAttempts = 3
     [int] $Slots = 0
-    [int] $Attempt = 0
     [string[]] $WordList, $RandomWords, $Tail
     [string] $Head = ""
     [string] $PassphraseString = ""
@@ -156,34 +149,28 @@ function Get-RandomPassPhrase {
         exit 1
     }
 
-    $Attempt = 0
-    do {
-        $Attempt++
-        $RandomWords = @()
-        $RandomWords += Get-RandomWords -Count $WordCount -WordList $WordList -AllLower:$AllLower
-        $Head = $RandomWords[0]
-        $Tail = @()
-        for ($i = 0; $i -lt $Slots; $i++) {
-            if (Get-Random -Minimum 0 -Maximum 2) {
-                $Tail += Get-RandomSpecial
-            }
-            else {
-                $Tail += Get-RandomDigit
-            }
-            $Tail += $RandomWords[$i + 1]
+    $RandomWords = @()
+    $RandomWords += Get-RandomWords -Count $WordCount -WordList $WordList -AllLower:$AllLower
+    $Head = $RandomWords[0]
+    $Tail = @()
+    for ($i = 0; $i -lt $Slots; $i++) {
+        if (Get-Random -Minimum 0 -Maximum 2) {
+            $Tail += Get-RandomSpecial
         }
-        $PassphraseString = $Head + ($Tail -join '')
-        $Entropy = Get-EntropyBits -WordCount $WordCount -WordListCount $WordList.Count -UseExtendedSpecials:$UseExtendedSpecials -AllLower:$AllLower
-    } while (($Attempt -lt $MaxAttempts) -and ($Entropy -lt $MinEntropy))
+        else {
+            $Tail += Get-RandomDigit
+        }
+        $Tail += $RandomWords[$i + 1]
+    }
+    $PassphraseString = $Head + ($Tail -join '')
+    $Entropy = Get-EntropyBits -WordCount $WordCount -WordListCount $WordList.Count -UseExtendedSpecials:$UseExtendedSpecials -AllLower:$AllLower
+    
 
     $strengthInfo = Get-StrengthLabel -Entropy $Entropy
     Write-Host "Generated Passphrase:" -ForegroundColor Cyan
     Write-Host $PassphraseString -ForegroundColor Green
     Write-Host ""
     Write-Host "Entropy Score: $Entropy bits ($($strengthInfo.Label))" -ForegroundColor $strengthInfo.Color
-    if ($MinEntropy -gt 0 -and $Entropy -lt $MinEntropy) {
-        Write-Host "WARNING: Unable to meet MinEntropy=$MinEntropy after $Attempt attempts." -ForegroundColor Yellow
-    }
 }
 
 if (($null -eq $sink) -or ($sink -in @('/?', '/h', '/help', '--help')) -or $Usage -or $Help) {
@@ -198,6 +185,6 @@ if ($WordCount -lt 1) {
 
 for ($i = 1; $i -le $Count; $i++) {
     if ($Count -gt 1) { Write-Host "Passphrase #$i" -ForegroundColor Cyan }
-    Get-RandomPassPhrase -WordCount $WordCount -AllLower:$AllLower -UseExtendedSpecials:$UseExtendedSpecials -MinEntropy $MinEntropy
+    Get-RandomPassPhrase -WordCount $WordCount -AllLower:$AllLower -UseExtendedSpecials:$UseExtendedSpecials 
     if ($i -lt $Count) { Write-Host "" }
 }
