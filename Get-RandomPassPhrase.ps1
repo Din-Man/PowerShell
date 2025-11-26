@@ -1,15 +1,16 @@
 param (
-    [string]$sink,
-    [int]$WordCount = 4,
-    [int]$DigitCount = 2,
-    [int]$SpecialCount = 2,
-    [string]$SpecialSet = 'basic', # 'basic', 'extended', 'custom'
-    [string]$CustomSpecials = '',
-    [string]$WordListPath = ".\Dictionary.txt",
-    [switch]$Capitalize,
-    [switch]$Usage,
-    [switch]$Help
+    [string] $sink,
+    [int] $Count = 1,
+    [int] $WordCount = 5,
+    [double] $MinEntropy = 0,
+    [switch] $UseExtendedSpecials,
+    [switch] $AllLower,
+    [switch] $Usage,
+    [switch] $Help
 )
+
+# Script-safe path resolution
+$ScriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Definition }
 
 function Get-RandomPassphrase-Usage {
     Write-Host ""
@@ -19,16 +20,17 @@ function Get-RandomPassphrase-Usage {
     Write-Host ""
     Write-Host "DESCRIPTION:" -ForegroundColor Yellow
     Write-Host "  Generates a secure passphrase composed of random words, digits, and" 
-    Write-Host "  special characters. Anchors the passphrase with a word at both ends."
+    Write-Host "  special characters. Anchors the passphrase with a word at both ends and"
+    Write-Host "  digits or special characters are randomly placed between words."
+    Write-Host "  Looks for 'Dictionary.txt' on the script path for the dictionary of words to be used. "
+    Write-Host "  Recommended to use your own custom word list or Diceware or EFF word list or other public wordlist."
     Write-Host ""
     Write-Host "PARAMETERS:" -ForegroundColor Yellow
-    Write-Host "  -WordCount       Number of words to include in the passphrase. Minimum: 3; Default: 4"
-    Write-Host "  -DigitCount      Number of digits to include. Default: 2"
-    Write-Host "  -SpecialCount    Number of special characters to include. Default: 2"
-    Write-Host "  -WordListPath    Path to the word list file. Default: .\Dictionary.txt"
-    Write-Host "  -Capitalize      Optional switch. Capitalizes the first letter of each word."
-    Write-Host "  -SpecialSet      Character set to use: basic, extended, or custom. Default: basic"
-    Write-Host "  -CustomSpecials  Custom special characters (used only if -SpecialSet is 'custom')"
+    Write-Host "  -WordCount            Number of words to include in the passphrase. Default: 5"
+    Write-Host "  -Count                Number of passphrases to generate. Default: 1"
+    Write-Host "  -UseExtendedSpecials  Switch to select basic vs extended special characters"
+    Write-Host "  -AllLower             Switch to indicate if the passphrase should be all lower case"
+    Write-Host "  -MinEntropy           Minimum entropy threshold in bits. Default: 0 (no minimum)"
     Write-Host ""
     Write-Host "OUTPUT:" -ForegroundColor Yellow
     Write-Host "  - Passphrase string with anchored first/last word"
@@ -40,102 +42,76 @@ function Get-RandomPassphrase-Usage {
     Write-Host "      Strong" -ForegroundColor Green
     Write-Host "      Very Strong" -ForegroundColor DarkGreen
     Write-Host ""
-    Write-Host "USAGE EXAMPLE:" -ForegroundColor Yellow
-    Write-Host "  Get-RandomPassphrase -WordCount 5 -DigitCount 3 -SpecialCount 2 -Capitalize"
+    Write-Host "USAGE EXAMPLES:" -ForegroundColor Yellow
+    Write-Host "  Get-RandomPassphrase"
+    Write-Host "  Get-RandomPassphrase -WordCount 4 -MinEntropy 80 -Count 3"
+    Write-Host "  Get-RandomPassphrase -UseExtendedSpecials -AllLower"
     Write-Host ""
     Write-Host "#################################################################################" -ForegroundColor Cyan
 }
 function Get-RandomWords {
     param (
         [int]$Count,
-        [string]$Path,
-        [switch]$Capitalize
+        [string[]]$WordList,
+        [switch]$AllLower
     )
+    [string[]] $words = @()
 
-    $words = Get-Random -InputObject (Get-Content $Path) -Count $Count
+    $words += Get-Random -InputObject $WordList -Count $Count
 
-    if ($Capitalize) {
+    if ($AllLower) {
         $words = $words | ForEach-Object {
-            $_.Substring(0, 1).ToUpper() + $_.Substring(1).ToLower()
+            $_.ToLower()
         }
     }
-
     return $words
 }
 
-function Get-RandomDigits {
-    param ([int]$Count)
-    $result = @()
-    for ($i = 0; $i -lt $Count; $i++) {
-        $digit = Get-Random -Minimum 0 -Maximum 10
-        $result += $digit
-    }
-    return $result
+function Get-RandomDigit {
+    return (Get-Random -Minimum 0 -Maximum 10).ToString()
 }
 
 function Get-SpecialCharacters {
     param (
-        [string]$Set,
-        [string]$Custom = ''
+        [switch] $UseExtendedSpecials
     )
 
-    switch ($Set.ToLower()) {
-        'basic' { return '!@#$%^&*()'.ToCharArray() }
-        'extended' { return '!@#$%^&*()-_=+[]{}<>?'.ToCharArray() }
-        'custom' { return $Custom.ToCharArray() | Where-Object { $_ -match '.' } }
-        default {
-            Write-Warning "Unknown set: $Set"
-            return @()
-        }
-    }
-}
-
-function Get-RandomSpecials {
-    param (
-        [int]$Count,
-        [string]$Set,
-        [string]$Custom
-    )
-
-    $specials = Get-SpecialCharacters -Set $Set -Custom $Custom
-    $result = @()
-    for ($i = 0; $i -lt $Count; $i++) {
-        $index = Get-Random -Minimum 0 -Maximum $specials.Length
-        $result += $specials[$index]
-    }
-    return $result
-}
-function Get-EntropyBits {
-    param (
-        [int]$PhraseLength,
-        [string]$SpecialSet,
-        [string]$CustomSpecials,
-        [switch]$Capitalize
-    )
-
-    $charset = @()
-
-    # Word characters
-    if ($Capitalize) {
-        $charset += [char[]]'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
+    if ($UseExtendedSpecials) {
+        return '!@#$%^&*()-_=+[]{}<>?'.ToCharArray()
     }
     else {
-        $charset += [char[]]'abcdefghijklmnopqrstuvwxyz'
+        return '!@#$%^&*()'.ToCharArray() 
     }
+}
 
-    # Digits
-    if ($DigitCount -gt 0) {
-        $charset += 0..9
-    }
+function Get-RandomSpecial {
+    param (
+        [switch] $UseExtendedSpecials
+    )
+    $specials = Get-SpecialCharacters -UseExtendedSpecials:$UseExtendedSpecials
+    $index = Get-Random -Minimum 0 -Maximum $specials.Length
+    return $specials[$index]
+}
 
-    # Specials
-    if ($SpecialCount -gt 0) {
-        $charset += Get-SpecialCharacters -Set $SpecialSet -Custom $CustomSpecials
-    }
+function Get-EntropyBits {
+    param (
+        [int]$WordCount,
+        [int]$WordListCount,
+        [switch]$UseExtendedSpecials,
+        [switch]$AllLower
+    )
 
-    $poolSize = $charset.Count
+    # Per-word entropy from dictionary size
+    $wordEntropy = $WordCount * [Math]::Log($WordListCount, 2)
+    Write-Host $wordEntropy
+    # Seperator entropy from the slots
+    $slots = $WordCount - 1
+    $slotsCharsCount = 10 + (Get-SpecialCharacters -UseExtendedSpecials:$UseExtendedSpecials).Count
+    Write-Host $slotsCharsCount
+    $slotsEntropy = $slots * [Math]::Log($slotsCharsCount, 2)
+    Write-Host $slotsEntropy
 
-    return [math]::Round([math]::Log([math]::Pow($poolSize, $PhraseLength), 2), 2)
+    return [math]::Round($wordEntropy + $slotsEntropy, 2)
 }
 
 function Get-StrengthLabel {
@@ -152,43 +128,62 @@ function Get-StrengthLabel {
 
 function Get-RandomPassPhrase {
     param (
-        [int]$WordCount,
-        [int]$DigitCount,
-        [int]$SpecialCount,
-        [string]$SpecialSet,
-        [string]$CustomSpecials,
-        [string]$WordListPath,
-        [switch]$Capitalize
+        [int] $WordCount,
+        [switch] $UseExtendedSpecials,
+        [switch] $AllLower,
+        [double] $MinEntropy
     )
+    
+    [int] $MaxAttempts = 3
+    [int] $Slots = 0
+    [int] $Attempt = 0
+    [string[]] $WordList, $RandomWords, $Tail
+    [string] $Head = ""
+    [string] $PassphraseString = ""
+    [float] $Entropy = 0
 
-    if ($WordCount -lt 3) {
-        Write-Host "WordCount must be at least 3 for anchored passphrases." -ForegroundColor Red
-        exit 1
-    }
+    $Slots = $WordCount - 1
 
+    $WordListPath = Join-Path $ScriptDir 'Dictionary.txt'
     if (-not (Test-Path $WordListPath)) {
         Write-Host "Word list not found at: $WordListPath" -ForegroundColor Red
         exit 1
     }
 
-    $words = Get-RandomWords -Count $WordCount -Path $WordListPath -Capitalize:$Capitalize
-    $digits = Get-RandomDigits -Count $DigitCount
-    $specials = Get-RandomSpecials -Count $SpecialCount -Set $SpecialSet -Custom $CustomSpecials
+    $WordList = Get-Content $WordListPath
+    if ($WordList.Count -lt $WordCount) { 
+        Write-Host "Word list contains $($WordList.Count) entries; need at least $WordCount." -ForegroundColor Red
+        exit 1
+    }
 
-    $firstWord = $words[0]
-    $lastWord = $words[-1]
-    $middle = ($words[1..($words.Count - 2)] + $digits + $specials) | Get-Random -Count ($words.Count - 2 + $digits.Count + $specials.Count)
+    $Attempt = 0
+    do {
+        $Attempt++
+        $RandomWords = @()
+        $RandomWords += Get-RandomWords -Count $WordCount -WordList $WordList -AllLower:$AllLower
+        $Head = $RandomWords[0]
+        $Tail = @()
+        for ($i = 0; $i -lt $Slots; $i++) {
+            if (Get-Random -Minimum 0 -Maximum 2) {
+                $Tail += Get-RandomSpecial
+            }
+            else {
+                $Tail += Get-RandomDigit
+            }
+            $Tail += $RandomWords[$i + 1]
+        }
+        $PassphraseString = $Head + ($Tail -join '')
+        $Entropy = Get-EntropyBits -WordCount $WordCount -WordListCount $WordList.Count -UseExtendedSpecials:$UseExtendedSpecials -AllLower:$AllLower
+    } while (($Attempt -lt $MaxAttempts) -and ($Entropy -lt $MinEntropy))
 
-    $passphrase = @($firstWord) + $middle + @($lastWord)
-    $passphraseString = $passphrase -join ''
-
-    $entropy = Get-EntropyBits $passphraseString.Length -SpecialSet $SpecialSet -CustomSpecials $CustomSpecials -Capitalize:$Capitalize
-    
-    $strengthInfo = Get-StrengthLabel -Entropy $entropy
+    $strengthInfo = Get-StrengthLabel -Entropy $Entropy
     Write-Host "Generated Passphrase:" -ForegroundColor Cyan
-    Write-Host $passphraseString -ForegroundColor Green
+    Write-Host $PassphraseString -ForegroundColor Green
     Write-Host ""
-    Write-Host "Entropy Score: $entropy bits ($($strengthInfo.Label))" -ForegroundColor $strengthInfo.Color
+    Write-Host "Entropy Score: $Entropy bits ($($strengthInfo.Label))" -ForegroundColor $strengthInfo.Color
+    if ($MinEntropy -gt 0 -and $Entropy -lt $MinEntropy) {
+        Write-Host "WARNING: Unable to meet MinEntropy=$MinEntropy after $Attempt attempts." -ForegroundColor Yellow
+    }
 }
 
 if (($null -eq $sink) -or ($sink -in @('/?', '/h', '/help', '--help')) -or $Usage -or $Help) {
@@ -196,4 +191,13 @@ if (($null -eq $sink) -or ($sink -in @('/?', '/h', '/help', '--help')) -or $Usag
     exit 0
 }
 
-Get-RandomPassPhrase -WordCount $WordCount -DigitCount $DigitCount -SpecialCount $SpecialCount -WordListPath $WordListPath -Capitalize:$Capitalize -SpecialSet $SpecialSet -CustomSpecials $CustomSpecials
+if ($WordCount -lt 1) {
+    Write-host "Word count must be at least 1" -ForegroundColor Red
+    exit 1
+}
+
+for ($i = 1; $i -le $Count; $i++) {
+    if ($Count -gt 1) { Write-Host "Passphrase #$i" -ForegroundColor Cyan }
+    Get-RandomPassPhrase -WordCount $WordCount -AllLower:$AllLower -UseExtendedSpecials:$UseExtendedSpecials -MinEntropy $MinEntropy
+    if ($i -lt $Count) { Write-Host "" }
+}
