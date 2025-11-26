@@ -1,5 +1,6 @@
 # Ignore any test files
 test.ps1
+dictionary.txt
 
 # Ignore all .log files
 *.log
